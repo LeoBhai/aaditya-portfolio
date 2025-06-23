@@ -1,6 +1,6 @@
-from django.shortcuts import render
-from .models import Contact
+from django.shortcuts import render, redirect
 from django.http import JsonResponse, HttpResponseBadRequest
+from .models import Contact
 
 def home(request):
     return render(request, 'main/home.html')
@@ -14,13 +14,21 @@ def submit_contact(request):
         if name and email and message:
             Contact.objects.create(name=name, email=email, message=message)
 
-            # Detect if it's a JavaScript fetch call
+            # ✅ If it's a JS fetch() request, return JSON
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                return JsonResponse({'status': 'success'})
+                return JsonResponse({'status': 'success'}, status=200)
 
-            # Normal form fallback (not used in your case)
-            return render(request, 'main/home.html', {'success': True})
+            # Fallback for traditional form (not used here, but safe)
+            return redirect('home')
         else:
+            # Missing fields
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'error', 'message': 'Missing fields'}, status=400)
+
             return HttpResponseBadRequest("Missing fields")
 
-    return HttpResponseBadRequest("Invalid method")
+    # Non-POST request
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
+
+    return HttpResponseBadRequest("Invalid request method")
