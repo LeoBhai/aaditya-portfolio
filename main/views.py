@@ -1,6 +1,7 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render
 from django.http import JsonResponse, HttpResponseBadRequest
-from .models import Contact
+from django.core.mail import send_mail
+from django.conf import settings
 
 def home(request):
     return render(request, 'main/home.html')
@@ -12,23 +13,21 @@ def submit_contact(request):
         message = request.POST.get('message')
 
         if name and email and message:
-            Contact.objects.create(name=name, email=email, message=message)
+            subject = f"📩 New Message from {name}"
+            body = f"Name: {name}\nEmail: {email}\n\nMessage:\n{message}"
 
-            # ✅ If it's a JS fetch() request, return JSON
-            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            try:
+                send_mail(
+                    subject,
+                    body,
+                    settings.DEFAULT_FROM_EMAIL,
+                    ['aaditya.sharma.58592@gmail.com'],
+                    fail_silently=False,
+                )
                 return JsonResponse({'status': 'success'}, status=200)
+            except Exception as e:
+                return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
-            # Fallback for traditional form (not used here, but safe)
-            return redirect('home')
-        else:
-            # Missing fields
-            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                return JsonResponse({'status': 'error', 'message': 'Missing fields'}, status=400)
+        return JsonResponse({'status': 'error', 'message': 'Missing fields'}, status=400)
 
-            return HttpResponseBadRequest("Missing fields")
-
-    # Non-POST request
-    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
-
-    return HttpResponseBadRequest("Invalid request method")
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
