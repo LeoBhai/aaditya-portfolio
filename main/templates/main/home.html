@@ -759,6 +759,21 @@
     </section>
 
     <script>
+        function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+        const cookies = document.cookie.split(";");
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + "=")) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
         // Smooth scrolling for navigation links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
@@ -806,13 +821,11 @@ document.querySelector('form').addEventListener('submit', function (e) {
     const form = this;
     const formData = new FormData(form);
     const name = formData.get('name');
-    const email = formData.get('email');
-    const message = formData.get('message');
 
     fetch("{% url 'submit_contact' %}", {
         method: "POST",
         headers: {
-            'X-CSRFToken': '{{ csrf_token }}'
+            'X-CSRFToken': getCookie('csrftoken')
         },
         body: formData
     })
@@ -829,6 +842,7 @@ document.querySelector('form').addEventListener('submit', function (e) {
         console.error("Error:", error);
     });
 });
+
 
 
         // Particle effect for hero section (optional enhancement)
